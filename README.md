@@ -18,7 +18,7 @@ Build an intelligent document companion that respects user privacy while deliver
 - **File I/O:** Native browser FileReader API for local client-side document ingestion
 - **Internationalization:** Multi-language support (English, Hindi, Spanish) with language detection
 
-## 🚀 Key Features Implemented (7 of 13)
+## 🚀 Key Features Implemented (8 of 13)
 
 ✅ **Direct Context Grounding:** Unlike traditional RAG that uses complex vector databases (which can lose nuances), this app leverages Gemini's massive context window. It feeds the entire document content into the model's system instructions, ensuring the AI has perfect "short-term memory" of your files.
 
@@ -35,6 +35,8 @@ Build an intelligent document companion that respects user privacy while deliver
 ✅ **Advanced Search & Filtering:** Full-text search across all documents with keyword highlighting, document tagging, relevance scoring, and snippet extraction.
 
 ✅ **Persistent Sessions:** Auto-save documents and chat history to browser IndexedDB. Sessions restore automatically on page refresh, preserving your entire conversation and uploaded documents.
+
+✅ **Analytics Dashboard:** Real-time usage statistics tracking documents uploaded, queries sent, tokens consumed, and response times. Visual dashboard with daily trend charts and session metrics.
 
 ✅ **Mobile-Responsive Design:** Fully responsive UI optimized for desktop, tablet, and mobile devices using Tailwind CSS.
 
@@ -147,7 +149,7 @@ Built by **Preity Rashmi** as a demonstration of practical RAG applications usin
 
 *Planned for Q1-Q2 2026*
 
-### ✅ COMPLETED (7/13)
+### ✅ COMPLETED (8/13)
 
 *Last Updated: February 3, 2026*
 
@@ -191,14 +193,25 @@ Built by **Preity Rashmi** as a demonstration of practical RAG applications usin
    - Clear History button for complete data reset
    - No backend required (100% browser-based)
 
-### ❌ NOT YET IMPLEMENTED (6/13)
+8. ✅ **Analytics Dashboard**
+   - Track usage metrics: documents uploaded, queries sent, tokens used, API costs
+   - Real-time dashboard with 2-second refresh
+   - Visualization features:
+     - Key metrics cards (documents, queries, tokens, cost estimate)
+     - Performance indicators (average response time)
+     - Session duration tracking
+     - Daily trend charts for documents and queries (last 7 days)
+     - Top search keywords tracking
+   - All data stored in browser localStorage
+   - Cost calculation at $0.075 per 1M tokens
+
+### ❌ NOT YET IMPLEMENTED (5/13)
 
 1. **Vector DB Integration** - Integrate Pinecone, Chroma, or similar for semantic search
-2. **Analytics Dashboard** - Usage statistics and session analytics
-3. **Voice Interactivity** - Gemini Live API for real-time voice conversations
-4. **Real-time Collaboration** - Multi-user document access and shared sessions
-5. **Cloud Storage Integration** - Connect with Google Drive, OneDrive, Dropbox
-6. **Plugin System** - Extensible architecture for custom tools and integrations
+2. **Voice Interactivity** - Gemini Live API for real-time voice conversations
+3. **Real-time Collaboration** - Multi-user document access and shared sessions
+4. **Cloud Storage Integration** - Connect with Google Drive, OneDrive, Dropbox
+5. **Plugin System** - Extensible architecture for custom tools and integrations
 
 ---
 
