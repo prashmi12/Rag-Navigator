@@ -4,10 +4,12 @@ import { Lang } from './utils/i18n';
 import Toast from './components/Toast';
 import Sidebar from './components/Sidebar';
 import ChatWindow from './components/ChatWindow';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 import { DocumentFile, Message } from './types';
 import { ragService } from './services/geminiService';
 import { generateId } from './utils/fileProcessor';
 import { storageService } from './utils/storageService';
+import { analyticsService } from './utils/analyticsService';
 
 const App: React.FC = () => {
     const [lang, setLang] = useState<Lang>('en');
@@ -16,6 +18,7 @@ const App: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error' | 'info' } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   
   // Global notification system
   const notify = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -59,6 +62,13 @@ const App: React.FC = () => {
     }
   }, [documents, messages, isLoading]);
 
+  // Track document uploads and deletions
+  useEffect(() => {
+    if (!isLoading) {
+      analyticsService.trackDocumentUpload(documents.length);
+    }
+  }, [documents.length, isLoading]);
+
   const handleSummarize = async (docsToSummarize: DocumentFile[]) => {
     if (isTyping || docsToSummarize.length === 0) return;
     if (docsToSummarize.length === 0) {
@@ -80,6 +90,8 @@ const App: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
+    const startTime = Date.now();
+
     try {
       const assistantMessageId = generateId();
       setMessages(prev => [...prev, {
@@ -90,13 +102,19 @@ const App: React.FC = () => {
       }]);
 
       let fullSummary = '';
+      let tokensUsed = 0;
       const stream = ragService.summarizeDocs(docsToSummarize);
       for await (const chunk of stream) {
         fullSummary += chunk;
+        tokensUsed += chunk.length * 1.3; // Rough estimate: ~1.3 tokens per character
         setMessages(prev => prev.map(msg => 
           msg.id === assistantMessageId ? { ...msg, text: fullSummary } : msg
         ));
       }
+
+      // Track analytics
+      const responseTime = (Date.now() - startTime) / 1000;
+      analyticsService.trackSummarize(docsToSummarize.length, Math.ceil(tokensUsed));
     } catch (error: any) {
       console.error("Summarization failed", error);
       setMessages(prev => [...prev, {
@@ -144,6 +162,7 @@ const App: React.FC = () => {
         lang={lang}
         setLang={setLang}
         onClearHistory={handleClearHistory}
+        onShowAnalytics={() => setShowAnalytics(true)}
       />
       <main className="flex-1 h-full">
         {documents.length > 0 ? (
@@ -211,6 +230,11 @@ const App: React.FC = () => {
       {toast && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />
       )}
+      <AnalyticsDashboard 
+        lang={lang} 
+        isOpen={showAnalytics} 
+        onClose={() => setShowAnalytics(false)} 
+      />
       {/* Example: fire notifications for demo events */}
       {/* <button onClick={() => notify('This is a global notification!', 'info')}>Test Notification</button> */}
     </div>
