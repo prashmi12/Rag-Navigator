@@ -15,9 +15,10 @@ interface SidebarProps {
   isProcessing: boolean;
   lang: Lang;
   setLang: (lang: Lang) => void;
+  onClearHistory?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ documents, onDocumentsChange, onSummarize, isProcessing, lang, setLang }) => {
+const Sidebar: React.FC<SidebarProps> = ({ documents, onDocumentsChange, onSummarize, isProcessing, lang, setLang, onClearHistory }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -184,7 +185,18 @@ const Sidebar: React.FC<SidebarProps> = ({ documents, onDocumentsChange, onSumma
         </div>
       </div>
 
-      <div className="p-6 mt-auto">
+      <div className="p-6 mt-auto space-y-3">
+        {documents.length > 0 && (
+          <button
+            onClick={onClearHistory}
+            className="w-full flex items-center justify-center space-x-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 font-medium py-2 px-4 rounded-lg transition-all border border-red-600/50 text-sm"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span>Clear History</span>
+          </button>
+        )}
         <input
           type="file"
           ref={fileInputRef}

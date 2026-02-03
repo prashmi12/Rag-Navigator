@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lang } from './utils/i18n';
 import Toast from './components/Toast';
 import Sidebar from './components/Sidebar';
@@ -7,6 +7,7 @@ import ChatWindow from './components/ChatWindow';
 import { DocumentFile, Message } from './types';
 import { ragService } from './services/geminiService';
 import { generateId } from './utils/fileProcessor';
+import { storageService } from './utils/storageService';
 
 const App: React.FC = () => {
     const [lang, setLang] = useState<Lang>('en');
@@ -14,10 +15,49 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error' | 'info' } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
   // Global notification system
   const notify = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ message, type });
   };
+
+  // Load session on app mount
+  useEffect(() => {
+    const loadSession = async () => {
+      try {
+        const session = await storageService.loadSession();
+        if (session && session.documents.length > 0) {
+          setDocuments(session.documents);
+          setMessages(session.messages);
+          notify('Session restored from last visit', 'success');
+        }
+      } catch (error) {
+        console.error('Failed to load session:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSession();
+  }, []);
+
+  // Auto-save session whenever documents or messages change
+  useEffect(() => {
+    if (!isLoading && (documents.length > 0 || messages.length > 0)) {
+      const saveSession = async () => {
+        try {
+          await storageService.saveSession(documents, messages);
+        } catch (error) {
+          console.error('Failed to save session:', error);
+        }
+      };
+
+      // Debounce save to avoid too frequent writes
+      const timer = setTimeout(saveSession, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [documents, messages, isLoading]);
 
   const handleSummarize = async (docsToSummarize: DocumentFile[]) => {
     if (isTyping || docsToSummarize.length === 0) return;
@@ -77,6 +117,23 @@ const App: React.FC = () => {
     }
   };
 
+  // Clear all data and history
+  const handleClearHistory = async () => {
+    if (!window.confirm('Are you sure you want to clear all documents and chat history? This cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await storageService.clearAllSessions();
+      setDocuments([]);
+      setMessages([]);
+      notify('All data cleared successfully', 'success');
+    } catch (error) {
+      console.error('Failed to clear history:', error);
+      notify('Failed to clear history', 'error');
+    }
+  };
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-950 flex-row">
       <Sidebar 
@@ -86,6 +143,7 @@ const App: React.FC = () => {
         isProcessing={isTyping}
         lang={lang}
         setLang={setLang}
+        onClearHistory={handleClearHistory}
       />
       <main className="flex-1 h-full">
         {documents.length > 0 ? (
