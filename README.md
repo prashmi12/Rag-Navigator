@@ -18,7 +18,7 @@ Build an intelligent document companion that respects user privacy while deliver
 - **File I/O:** Native browser FileReader API for local client-side document ingestion
 - **Internationalization:** Multi-language support (English, Hindi, Spanish) with language detection
 
-## 🚀 Key Features Implemented (6 of 13)
+## 🚀 Key Features Implemented (7 of 13)
 
 ✅ **Direct Context Grounding:** Unlike traditional RAG that uses complex vector databases (which can lose nuances), this app leverages Gemini's massive context window. It feeds the entire document content into the model's system instructions, ensuring the AI has perfect "short-term memory" of your files.
 
@@ -33,6 +33,8 @@ Build an intelligent document companion that respects user privacy while deliver
 ✅ **Notifications & Alerts:** Comprehensive error handling with specific messages for API issues (invalid token, quota exceeded, permissions, etc.) displayed via Toast alerts.
 
 ✅ **Advanced Search & Filtering:** Full-text search across all documents with keyword highlighting, document tagging, relevance scoring, and snippet extraction.
+
+✅ **Persistent Sessions:** Auto-save documents and chat history to browser IndexedDB. Sessions restore automatically on page refresh, preserving your entire conversation and uploaded documents.
 
 ✅ **Mobile-Responsive Design:** Fully responsive UI optimized for desktop, tablet, and mobile devices using Tailwind CSS.
 
@@ -141,11 +143,11 @@ Built by **Preity Rashmi** as a demonstration of practical RAG applications usin
 - **API Quotas:** Bound by Google's rate limits and quota. Monitor your API usage in Google Cloud Console.
 - **Browser Storage:** Long chat histories may consume browser local storage quota (typically 5-10MB).
 
-## 📈 Future Enhancements (7 items remaining)
+## 📈 Future Enhancements (6 items remaining)
 
 *Planned for Q1-Q2 2026*
 
-### ✅ COMPLETED (6/13)
+### ✅ COMPLETED (7/13)
 
 *Last Updated: February 3, 2026*
 
@@ -183,15 +185,20 @@ Built by **Preity Rashmi** as a demonstration of practical RAG applications usin
    - Optimized for tablets and smartphones
    - Touch-friendly interface elements
 
-### ❌ NOT YET IMPLEMENTED (7/13)
+7. ✅ **Persistent Sessions**
+   - Auto-save documents and chat history to IndexedDB
+   - Sessions automatically restore on page refresh
+   - Clear History button for complete data reset
+   - No backend required (100% browser-based)
+
+### ❌ NOT YET IMPLEMENTED (6/13)
 
 1. **Vector DB Integration** - Integrate Pinecone, Chroma, or similar for semantic search
-2. **Persistent Sessions** - Save document hub and chat history using IndexedDB/Backend
+2. **Analytics Dashboard** - Usage statistics and session analytics
 3. **Voice Interactivity** - Gemini Live API for real-time voice conversations
 4. **Real-time Collaboration** - Multi-user document access and shared sessions
-5. **Analytics Dashboard** - Usage statistics and session analytics
-6. **Cloud Storage Integration** - Connect with Google Drive, OneDrive, Dropbox
-7. **Plugin System** - Extensible architecture for custom tools and integrations
+5. **Cloud Storage Integration** - Connect with Google Drive, OneDrive, Dropbox
+6. **Plugin System** - Extensible architecture for custom tools and integrations
 
 ---
 
