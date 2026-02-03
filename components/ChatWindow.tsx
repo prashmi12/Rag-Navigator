@@ -88,14 +88,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     try {
       let fullResponse = '';
       const assistantMessageId = generateId();
+      let messageAdded = false;
       
-      setMessages(prev => [...prev, {
-        id: assistantMessageId,
-        role: 'assistant',
-        text: '',
-        timestamp: Date.now()
-      }]);
-
       // Instruct LLM to reply in the selected language
       const prompt = lang === 'hi'
         ? userMessage.text + '\nउत्तर हिंदी में दें।'
@@ -103,9 +97,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       const stream = ragService.sendMessageStream(prompt);
       for await (const chunk of stream) {
         fullResponse += chunk;
-        setMessages(prev => prev.map(msg => 
-          msg.id === assistantMessageId ? { ...msg, text: fullResponse } : msg
-        ));
+        
+        // Only add message to state after first chunk arrives
+        if (!messageAdded) {
+          setMessages(prev => [...prev, {
+            id: assistantMessageId,
+            role: 'assistant',
+            text: fullResponse,
+            timestamp: Date.now()
+          }]);
+          messageAdded = true;
+        } else {
+          setMessages(prev => prev.map(msg => 
+            msg.id === assistantMessageId ? { ...msg, text: fullResponse } : msg
+          ));
+        }
       }
     } catch (error) {
       console.error("Chat Error:", error);
@@ -158,7 +164,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <p className="text-slate-400 font-medium">Upload documents to start the conversation</p>
           </div>
         ) : (
-          messages.map((msg) => (
+          messages.map((msg) => {
+            // Don't display empty assistant messages (they appear as blank dots)
+            if (msg.role === 'assistant' && !msg.text.trim()) {
+              return null;
+            }
+            return (
             <div 
               key={msg.id} 
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -184,7 +195,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 </div>
               </div>
             </div>
-          ))
+            );
+          })
         )}
         {isTyping && messages.length > 0 && messages[messages.length - 1].role === 'user' && (
            <div className="flex justify-start">

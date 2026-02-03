@@ -9,7 +9,8 @@ export class GeminiRAGService {
   private chatInstance: Chat | null = null;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY || '' });
+    const apiKey = (import.meta as any).env.VITE_API_KEY || '';
+    this.ai = new GoogleGenAI({ apiKey });
   }
 
   private buildSystemInstruction(docs: DocumentFile[]): string {
@@ -78,7 +79,8 @@ INSTRUCTIONS:
   }
 
   async *summarizeDocs(docs: DocumentFile[]): AsyncGenerator<string> {
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY || '' });
+    const apiKey = (import.meta as any).env.VITE_API_KEY || '';
+    const ai = new GoogleGenAI({ apiKey });
     const prompt = docs.length === 1 
       ? `Please provide a concise summary of the document titled "${docs[0].name}". Highlight the key points, main arguments, and conclusion. Use bullet points for clarity.`
       : `Please provide a concise collective summary of the following ${docs.length} documents: ${docs.map(d => d.name).join(', ')}. Highlight common themes and unique key points from each.`;
@@ -86,7 +88,7 @@ INSTRUCTIONS:
     const content = docs.map(d => `Document: ${d.name}\nContent: ${d.content}`).join('\n\n');
 
     try {
-      if (!import.meta.env.VITE_API_KEY || import.meta.env.VITE_API_KEY === "") {
+      if (!apiKey || apiKey === "") {
         throw new Error("Gemini API key is missing or not set.");
       }
       if (!content || content.trim().length === 0) {

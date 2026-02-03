@@ -94,22 +94,29 @@ const App: React.FC = () => {
 
     try {
       const assistantMessageId = generateId();
-      setMessages(prev => [...prev, {
-        id: assistantMessageId,
-        role: 'assistant',
-        text: '',
-        timestamp: Date.now()
-      }]);
-
       let fullSummary = '';
       let tokensUsed = 0;
+      let messageAdded = false;
+      
       const stream = ragService.summarizeDocs(docsToSummarize);
       for await (const chunk of stream) {
         fullSummary += chunk;
         tokensUsed += chunk.length * 1.3; // Rough estimate: ~1.3 tokens per character
-        setMessages(prev => prev.map(msg => 
-          msg.id === assistantMessageId ? { ...msg, text: fullSummary } : msg
-        ));
+        
+        // Only add message to state after first chunk arrives
+        if (!messageAdded) {
+          setMessages(prev => [...prev, {
+            id: assistantMessageId,
+            role: 'assistant',
+            text: fullSummary,
+            timestamp: Date.now()
+          }]);
+          messageAdded = true;
+        } else {
+          setMessages(prev => prev.map(msg => 
+            msg.id === assistantMessageId ? { ...msg, text: fullSummary } : msg
+          ));
+        }
       }
 
       // Track analytics
