@@ -1,0 +1,6 @@
+
+{
+  "name": "Gemini RAG Navigator",
+  "description": "An advanced Retrieval-Augmented Generation (RAG) chat application that analyzes large documents and provides context-aware answers using Gemini's massive context window.",
+  "requestFramePermissions": []
+}
