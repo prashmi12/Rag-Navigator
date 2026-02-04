@@ -236,11 +236,11 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ lang, isOpen, o
 
           {/* Footer Info */}
           <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/50">
-            <p className="text-xs text-slate-400 space-y-1">
+            <div className="text-xs text-slate-400 space-y-1">
               <div>💡 Cost calculated at $0.075 per 1M input tokens</div>
               <div>📊 Data stored locally in browser (localStorage)</div>
               <div>🔄 Updates automatically every 2 seconds</div>
-            </p>
+            </div>
           </div>
         </div>
       </div>

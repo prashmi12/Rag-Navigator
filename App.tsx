@@ -5,13 +5,15 @@ import Toast from './components/Toast';
 import Sidebar from './components/Sidebar';
 import ChatWindow from './components/ChatWindow';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import LoginPage from './components/LoginPage';
 import { DocumentFile, Message } from './types';
 import { ragService } from './services/geminiService';
 import { generateId } from './utils/fileProcessor';
 import { storageService } from './utils/storageService';
 import { analyticsService } from './utils/analyticsService';
+import { useAuth } from './contexts/AuthContext';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
     const [lang, setLang] = useState<Lang>('en');
   const [documents, setDocuments] = useState<DocumentFile[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -19,6 +21,8 @@ const App: React.FC = () => {
   const [toast, setToast] = useState<{ message: string; type?: 'success' | 'error' | 'info' } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [previousDocCount, setPreviousDocCount] = useState(0);
+  const [sessionLoaded, setSessionLoaded] = useState(false); // Track if session has been loaded
   
   // Global notification system
   const notify = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -27,22 +31,50 @@ const App: React.FC = () => {
 
   // Load session on app mount
   useEffect(() => {
+    let isMounted = true;
+
     const loadSession = async () => {
       try {
-        const session = await storageService.loadSession();
-        if (session && session.documents.length > 0) {
-          setDocuments(session.documents);
-          setMessages(session.messages);
-          notify('Session restored from last visit', 'success');
+        console.log('=== LOADING SESSION ===');
+        console.log('[App] 📋 Current localStorage:');
+        console.log('  - currentUserId:', localStorage.getItem('currentUserId'));
+        console.log('  - currentUsername:', localStorage.getItem('currentUsername'));
+        
+        try {
+          console.log('[App] Step 1: Loading session from storage...');
+          const session = await storageService.loadSession();
+          console.log('[App] Step 2: Session load result:', session ? { docs: session.documents.length, msgs: session.messages.length } : 'null');
+          
+          if (isMounted) {
+            if (session && session.documents.length > 0) {
+              console.log(`[App] ✅ Restoring ${session.documents.length} documents`);
+              setDocuments(session.documents);
+              setMessages(session.messages);
+              // Initialize previousDocCount so analytics doesn't count restored docs as new uploads
+              setPreviousDocCount(session.documents.length);
+              notify('Session restored from last visit', 'success');
+            } else {
+              console.log('[App] ⚠️ No documents in session');
+            }
+          }
+        } catch (error) {
+          console.error('[App] Error during session load:', error);
         }
       } catch (error) {
-        console.error('Failed to load session:', error);
+        console.error('[App] ❌ Error loading session:', error instanceof Error ? error.message : error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setSessionLoaded(true); // Mark that session loading is complete
+          setIsLoading(false);
+        }
       }
     };
 
     loadSession();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Auto-save session whenever documents or messages change
@@ -50,9 +82,13 @@ const App: React.FC = () => {
     if (!isLoading && (documents.length > 0 || messages.length > 0)) {
       const saveSession = async () => {
         try {
+          console.log('[App] 💾 Auto-saving session...');
+          console.log('[App] Docs:', documents.length, 'Messages:', messages.length);
+          
           await storageService.saveSession(documents, messages);
+          console.log('[App] ✅ Session auto-saved successfully');
         } catch (error) {
-          console.error('Failed to save session:', error);
+          console.error('[App] ❌ Failed to save session:', error);
         }
       };
 
@@ -62,12 +98,21 @@ const App: React.FC = () => {
     }
   }, [documents, messages, isLoading]);
 
-  // Track document uploads and deletions
+  // Track document uploads (but not when restoring from session)
   useEffect(() => {
-    if (!isLoading) {
-      analyticsService.trackDocumentUpload(documents.length);
+    if (sessionLoaded) {
+      const difference = documents.length - previousDocCount;
+      
+      // Only track if documents were added (not removed or no change)
+      if (difference > 0) {
+        console.log(`[App] 📊 Analytics: Tracking ${difference} new document(s) uploaded`);
+        analyticsService.trackDocumentUpload(difference);
+      }
+      
+      // Update previous count
+      setPreviousDocCount(documents.length);
     }
-  }, [documents.length, isLoading]);
+  }, [documents.length, sessionLoaded]);
 
   const handleSummarize = async (docsToSummarize: DocumentFile[]) => {
     if (isTyping || docsToSummarize.length === 0) return;
@@ -152,6 +197,7 @@ const App: React.FC = () => {
       await storageService.clearAllSessions();
       setDocuments([]);
       setMessages([]);
+      setToast(null);
       notify('All data cleared successfully', 'success');
     } catch (error) {
       console.error('Failed to clear history:', error);
@@ -170,6 +216,7 @@ const App: React.FC = () => {
         setLang={setLang}
         onClearHistory={handleClearHistory}
         onShowAnalytics={() => setShowAnalytics(true)}
+        onClearError={() => setToast(null)}
       />
       <main className="flex-1 h-full">
         {documents.length > 0 ? (
@@ -246,6 +293,27 @@ const App: React.FC = () => {
       {/* <button onClick={() => notify('This is a global notification!', 'info')}>Test Notification</button> */}
     </div>
   );
+};
+
+const App: React.FC = () => {
+  const { isLoggedIn, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-950">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="text-slate-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return <LoginPage />;
+  }
+
+  return <AppContent />;
 };
 
 export default App;

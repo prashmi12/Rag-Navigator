@@ -4,6 +4,7 @@ import { translations, Lang, detectLanguage, translateToEnglish } from '../utils
 import { DocumentFile } from '../types';
 import { readFileAsText, readPDFAsText, readImageAsText, generateId } from '../utils/fileProcessor';
 import { SearchService, SearchResult } from '../utils/searchService';
+import { useAuth } from '../contexts/AuthContext';
 import FileItem from './FileItem';
 import SearchBar from './SearchBar';
 import SearchResults from './SearchResults';
@@ -17,12 +18,15 @@ interface SidebarProps {
   setLang: (lang: Lang) => void;
   onClearHistory?: () => void;
   onShowAnalytics?: () => void;
+  onClearError?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ documents, onDocumentsChange, onSummarize, isProcessing, lang, setLang, onClearHistory, onShowAnalytics }) => {
+const Sidebar: React.FC<SidebarProps> = ({ documents, onDocumentsChange, onSummarize, isProcessing, lang, setLang, onClearHistory, onShowAnalytics, onClearError }) => {
+  const { user, logout } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadInfo, setUploadInfo] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
@@ -48,9 +52,9 @@ const Sidebar: React.FC<SidebarProps> = ({ documents, onDocumentsChange, onSumma
         const detectedLang = await detectLanguage(text);
         let processedText = text;
         if (detectedLang !== 'en') {
-          setUploadError(`${translations[lang].languageDetected}${detectedLang}`);
+          setUploadInfo(`${translations[lang].languageDetected}${detectedLang}`);
           processedText = await translateToEnglish(text, detectedLang);
-          setUploadError(translations[lang].translated);
+          setUploadInfo(translations[lang].translated);
         }
         newDocs.push({
           id: generateId(),
@@ -73,38 +77,46 @@ const Sidebar: React.FC<SidebarProps> = ({ documents, onDocumentsChange, onSumma
   };
 
   const removeDocument = (id: string) => {
-    onDocumentsChange(documents.filter(doc => doc.id !== id));
+    const remainingDocs = documents.filter(doc => doc.id !== id);
+    onDocumentsChange(remainingDocs);
+    // Only clear info if no documents are left
+    if (remainingDocs.length === 0) {
+      setUploadInfo(null);
+    }
   };
 
   return (
     <div className="w-80 max-w-full h-full border-r border-slate-800 flex flex-col justify-between bg-slate-900/50 backdrop-blur-sm transition-transform">
       <div className="p-6 border-b border-slate-800 flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
-            {translations[lang].documentHub}
-          </h2>
-          <div className="flex items-center gap-2">
-            {documents.length > 0 && (
-              <button
-                onClick={onShowAnalytics}
-                className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-blue-400 title='View Analytics'"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-              </button>
+          <div>
+            <h2 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-indigo-500 bg-clip-text text-transparent">
+              {translations[lang].documentHub}
+            </h2>
+            {user && (
+              <p className="text-xs text-slate-400 mt-1">Welcome, {user.username}</p>
             )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onShowAnalytics}
+              className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-blue-400 title='View Analytics'"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+            </button>
             <select
               className="bg-slate-800 text-slate-200 text-xs rounded px-2 py-1 border border-slate-700 focus:outline-none"
               value={lang}
@@ -114,6 +126,26 @@ const Sidebar: React.FC<SidebarProps> = ({ documents, onDocumentsChange, onSumma
               <option value="en">EN</option>
               <option value="hi">हिंदी</option>
             </select>
+            <button
+              onClick={logout}
+              className="p-1.5 hover:bg-slate-700 rounded-lg transition-colors text-slate-400 hover:text-red-400"
+              title="Logout"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+            </button>
           </div>
         </div>
         <p className="text-sm text-slate-400 mt-1">{translations[lang].manageKnowledge}</p>
@@ -160,8 +192,13 @@ const Sidebar: React.FC<SidebarProps> = ({ documents, onDocumentsChange, onSumma
             {translations[lang].uploading}
           </div>
         )}
+        {uploadInfo && (
+          <div className="mb-2 text-blue-400 text-xs bg-blue-500/10 p-2 rounded border border-blue-500/30">
+            {uploadInfo}
+          </div>
+        )}
         {uploadError && (
-          <div className="mb-2 text-red-400 text-xs">
+          <div className="mb-2 text-red-400 text-xs bg-red-500/10 p-2 rounded border border-red-500/30">
             {uploadError}
           </div>
         )}
@@ -212,7 +249,12 @@ const Sidebar: React.FC<SidebarProps> = ({ documents, onDocumentsChange, onSumma
       <div className="p-6 mt-auto space-y-3">
         {documents.length > 0 && (
           <button
-            onClick={onClearHistory}
+            onClick={() => {
+              onClearHistory?.();
+              onClearError?.();
+              setUploadError(null);
+              setUploadInfo(null);
+            }}
             className="w-full flex items-center justify-center space-x-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 font-medium py-2 px-4 rounded-lg transition-all border border-red-600/50 text-sm"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

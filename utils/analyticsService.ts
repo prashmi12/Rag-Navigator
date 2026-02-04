@@ -36,13 +36,21 @@ export interface AnalyticsData {
 }
 
 class AnalyticsServiceClass {
-  private storageKey = 'gemini-rag-analytics';
+  private storageKeyPrefix = 'gemini-rag-analytics-user-';
   private eventBuffer: AnalyticsEvent[] = [];
   private flushInterval = 5000; // Flush every 5 seconds
   private flushTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     this.startAutoFlush();
+  }
+
+  /**
+   * Get user-specific storage key
+   */
+  private getStorageKey(): string {
+    const userId = localStorage.getItem('currentUserId') || 'default';
+    return `${this.storageKeyPrefix}${userId}`;
   }
 
   /**
@@ -146,7 +154,7 @@ class AnalyticsServiceClass {
    */
   getData(): AnalyticsData {
     try {
-      const stored = localStorage.getItem(this.storageKey);
+      const stored = localStorage.getItem(this.getStorageKey());
       if (stored) {
         return JSON.parse(stored);
       }
@@ -162,7 +170,7 @@ class AnalyticsServiceClass {
    */
   private saveData(data: AnalyticsData): void {
     try {
-      localStorage.setItem(this.storageKey, JSON.stringify(data));
+      localStorage.setItem(this.getStorageKey(), JSON.stringify(data));
     } catch (error) {
       console.error('Failed to save analytics data:', error);
     }
@@ -288,7 +296,7 @@ class AnalyticsServiceClass {
    */
   clearData(): void {
     try {
-      localStorage.removeItem(this.storageKey);
+      localStorage.removeItem(this.getStorageKey());
       this.eventBuffer = [];
     } catch (error) {
       console.error('Failed to clear analytics:', error);
