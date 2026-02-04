@@ -6,6 +6,8 @@ interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
   isLoading: boolean;
+  isNewUser: boolean;
+  dismissNewUserTour: () => void;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
@@ -16,6 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   // Check if user is already logged in on mount
   useEffect(() => {
@@ -49,6 +52,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Auto-login after registration
     await authService.login(username, password);
     setUser(newUser);
+    // Mark as new user so tour shows
+    setIsNewUser(true);
+    // Don't set tour_seen initially so tour will show
+  };
+
+  const dismissNewUserTour = () => {
+    if (user) {
+      localStorage.setItem(`tour_seen_${user.id}`, 'true');
+    }
+    setIsNewUser(false);
   };
 
   return (
@@ -57,6 +70,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isLoggedIn: !!user,
         isLoading,
+        isNewUser,
+        dismissNewUserTour,
         login,
         logout,
         register

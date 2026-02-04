@@ -5,6 +5,7 @@ import Toast from './components/Toast';
 import Sidebar from './components/Sidebar';
 import ChatWindow from './components/ChatWindow';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import AppTour from './components/AppTour';
 import LoginPage from './components/LoginPage';
 import { DocumentFile, Message } from './types';
 import { ragService } from './services/geminiService';
@@ -23,11 +24,24 @@ const AppContent: React.FC = () => {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [previousDocCount, setPreviousDocCount] = useState(0);
   const [sessionLoaded, setSessionLoaded] = useState(false); // Track if session has been loaded
+  const { isNewUser, dismissNewUserTour, user } = useAuth();
+  const [showTour, setShowTour] = useState(false);
   
   // Global notification system
   const notify = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ message, type });
   };
+
+  // Show tour for new users
+  useEffect(() => {
+    if (isNewUser && user) {
+      // Show tour if it hasn't been explicitly marked as seen
+      const tourSeen = localStorage.getItem(`tour_seen_${user.id}`) === 'true';
+      if (!tourSeen) {
+        setShowTour(true);
+      }
+    }
+  }, [isNewUser, user]);
 
   // Load session on app mount
   useEffect(() => {
@@ -288,6 +302,13 @@ const AppContent: React.FC = () => {
         lang={lang} 
         isOpen={showAnalytics} 
         onClose={() => setShowAnalytics(false)} 
+      />
+      <AppTour 
+        isOpen={showTour} 
+        onClose={() => {
+          setShowTour(false);
+          dismissNewUserTour();
+        }} 
       />
       {/* Example: fire notifications for demo events */}
       {/* <button onClick={() => notify('This is a global notification!', 'info')}>Test Notification</button> */}
